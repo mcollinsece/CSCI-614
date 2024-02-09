@@ -1,1 +1,0 @@
-cmd_/home/mbc/assignment_1/list_tasks_dfs.ko := ld -r -EL  -maarch64elf -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T arch/arm64/module.lds -o /home/mbc/assignment_1/list_tasks_dfs.ko /home/mbc/assignment_1/list_tasks_dfs.o /home/mbc/assignment_1/list_tasks_dfs.mod.o;  true
