@@ -1,0 +1,5 @@
+change main() to int main()
+
+cc thread1.c -lpthread
+
+http://www.yolinux.com/TUTORIALS/LinuxTutorialPosixThreads.html

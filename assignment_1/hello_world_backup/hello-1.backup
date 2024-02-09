@@ -1,0 +1,36 @@
+/* These are standard module include files */
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Ormi > ormi.ormi@gmail.com");
+MODULE_DESCRIPTION("Hello World");
+
+/* This is function that will be executed when we load the module */
+int __init mod_init(void)
+{
+	/* Now we see printk function. This is something like
+	standard printf in C. But we are working in kernel mode
+	so we can't use functions used by user mode programs.
+	I will give more information about this function right
+	after the code of this module */
+	printk(KERN_ALERT "Hello world!\n");
+
+	return 0;
+}
+
+/* This function will be executed when we unload the module */
+void __exit mod_exit(void)
+{
+	printk(KERN_ALERT "Bye world\n");
+}
+
+
+/* Here we register mod_init and mod_exit */
+
+/* As a parameter of module_init we give function that has to be executed during loading of the module */
+module_init(mod_init);
+
+/* As a parameter of module_exit we give function that has to be executed during unloading of the module */
+module_exit(mod_exit);
