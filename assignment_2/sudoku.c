@@ -91,6 +91,15 @@ int main() {
 
     srand(time(NULL)); // Initialize random seed
 
+    // Open a file in write mode
+    FILE *fp = fopen("sudoku_puzzle.txt", "w");
+    if (fp == NULL) {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+
+    
+
     // Fill the diagonal of SRN x SRN matrices
     for (int i = 0; i < N; i += 3) {
         for (int row = i; row < i + 3; row++) {
@@ -105,8 +114,20 @@ int main() {
     }
 
     // Attempt to solve the puzzle
-    if (solveSudoku(grid) == 1)
+    if (solveSudoku(grid) == 1) {
         printGrid(grid);
+        // Write the Sudoku grid to the file
+        for (int row = 0; row < N; row++) {
+            for (int col = 0; col < N; col++) {
+                fprintf(fp, "%2d ", grid[row][col]);
+            }
+            fprintf(fp, "\n");
+        }
+        // Close the file
+        fclose(fp);
+        printf("Sudoku puzzle has been saved to sudoku_puzzle.txt\n");
+    }
+        
     else
         printf("No solution exists");
 
