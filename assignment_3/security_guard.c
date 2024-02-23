@@ -80,10 +80,12 @@ void guard_check_room() {
     // Assess the room
     assess_security();
     guard_state = 0; // Guard is no longer in the room
+    printf("\tguard done assessing room security\n");
     printf("\tguard left room\n");
     semSignalB(&mutex);
     // Signal any students waiting the room is not full (useful if capacity check is implemented)
     semSignalB(&room_not_full);
+    printf("\tguard walking the hallway for  %d millisecs...\n", rand_range(&seeds[0], MIN_SLEEP, MAX_SLEEP));
 }
 
 void student_study_in_room(long id) {
