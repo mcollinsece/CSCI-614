@@ -71,52 +71,43 @@ void guard_check_room() {
     semWaitB(&mutex);
     if (num_students > 0) {
         printf("\tguard waiting to enter room with %d students...\n", num_students);
-        // Guard waits for the room to be empty
-        guard_state = -1; // Indicates guard is waiting
-        semSignalB(&mutex); // Release mutex while waiting
-        semWaitB(&room_empty); // Wait for signal that room is empty
-        semWaitB(&mutex); // Re-acquire mutex to assess room
+        guard_state = -1;
+        semSignalB(&mutex);
+        semWaitB(&room_empty);
+        semWaitB(&mutex);
     }
-    // Assess the room
-    assess_security();
-    guard_state = 0; // Guard is no longer in the room
+    printf("\tguard assessing room security for %d millisecs...\n", rand_range(&seeds[0], MIN_SLEEP, MAX_SLEEP));
+    guard_state = 0;
     printf("\tguard done assessing room security\n");
     printf("\tguard left room\n");
     semSignalB(&mutex);
-    // Signal any students waiting the room is not full (useful if capacity check is implemented)
     semSignalB(&room_not_full);
-    printf("\tguard walking the hallway for  %d millisecs...\n", rand_range(&seeds[0], MIN_SLEEP, MAX_SLEEP));
+    printf("\tguard walking the hallway for %d millisecs...\n", rand_range(&seeds[0], MIN_SLEEP, MAX_SLEEP));
 }
 
 void student_study_in_room(long id) {
     semWaitB(&mutex);
     while (guard_state != 0 || num_students >= capacity) {
-        semSignalB(&mutex); // Avoid holding mutex while waiting
-        semWaitB(&room_not_full); // Wait to enter if room is full or guard is inside
+        semSignalB(&mutex);
+        semWaitB(&room_not_full);
         semWaitB(&mutex);
     }
     num_students++;
     printf("student %ld entering room, total now %d\n", id, num_students);
-    if (num_students == 1 && guard_state == -1) {
-        // If guard is waiting and this is the first student, signal guard
-        semSignalB(&room_empty);
-    }
     semSignalB(&mutex);
 
-    study(id);
+    printf("student %ld studying in room with %d students for %d millisecs\n", id, num_students, rand_range(&seeds[id], MIN_SLEEP, MAX_SLEEP));
 
     semWaitB(&mutex);
     num_students--;
     printf("student %ld left room, total now %d\n", id, num_students);
-    if (num_students == 0) {
-        // If this is the last student to leave, signal guard
+    if (num_students == 0 && guard_state == -1) {
         semSignalB(&room_empty);
-        printf("LAST student %ld left room, signaling guard\n", id);
-    } else {
-        // Signal next student that room is not full
-        semSignalB(&room_not_full);
     }
     semSignalB(&mutex);
+    if (num_students < capacity) {
+        semSignalB(&room_not_full);
+    }
 }
 
 void* guard(void* arg)
