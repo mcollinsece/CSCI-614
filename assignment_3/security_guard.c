@@ -107,7 +107,7 @@ void student_study_in_room(long id) {
 
     semWaitB(&mutex);
     num_students--;
-    printf("student %ld left room, total now %d\n", id, num_students);
+    //printf("student %ld left room, total now %d\n", id, num_students);
     if (num_students == 0) {
         // If this is the last student to leave, signal guard
         semSignalB(&room_empty);
