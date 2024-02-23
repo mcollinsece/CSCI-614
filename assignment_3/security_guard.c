@@ -69,37 +69,38 @@ void guard_walk_hallway()
 
 void guard_check_room()
 {
-  semWait(&mutex);
+  semWaitB(&mutex);
   if (num_students > 0) {
-    semWait(&room_empty); // Wait for room to be empty
+    semWaitB(&room_empty); // Wait for room to be empty
   }
   assess_security();
   guard_state = 0; // Guard is now in the hallway
-  semSignal(&room_not_full); // Signal that room is not full
-  semSignal(&mutex);
+  semSignalB(&room_not_full); // Signal that room is not full
+  semSignalB(&mutex);
 }
 
 void student_study_in_room(long id)
 {
-  semWait(&mutex);
+  semWaitB(&mutex);
   while (guard_state != 0 || num_students >= capacity) {
-    semSignal(&mutex); // Release mutex to avoid deadlock
-    semWait(&room_not_full); // Wait until room is not full
-    semWait(&mutex);
+    semSignalB(&mutex); // Release mutex to avoid deadlock
+    semWaitB(&room_not_full); // Wait until room is not full
+    semWaitB(&mutex);
   }
   num_students++;
-  semSignal(&mutex);
+  semSignalB(&mutex);
 
   study(id);
 
-  semWait(&mutex);
+  semWaitB(&mutex);
   num_students--;
   if (num_students == 0) {
-    semSignal(&room_empty); // Signal that room is empty
+    semSignalB(&room_empty); // Signal that room is empty
   }
-  semSignal(&mutex);
-  semSignal(&room_not_full); // Signal next student or guard
+  semSignalB(&mutex);
+  semSignalB(&room_not_full); // Signal next student or guard
 }
+
 
 void* guard(void* arg)
 {
