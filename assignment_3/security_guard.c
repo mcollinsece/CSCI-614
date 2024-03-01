@@ -42,6 +42,7 @@ int num_students;        // number of students in the room
 // TODO:  list here the "handful" of semaphores you will need to synchronize
 //        I've listed one you will need for sure, to "get you going"
 binary_semaphore mutex;  // to protect shared variables (including semaphores)
+binary_semaphore room_empty; // Signal if the room is empty or not
 
 // will malloc space for seeds[] in the main
 unsigned int *seeds;     // rand seeds for guard and students generating delays
@@ -119,6 +120,18 @@ void guard_check_room()
   // (eg. num_students), you need to insure you are doing so in a
   // mutually exclusive fashion, for example, by calling
   // semWait(&mutex).
+  semWaitB(&mutex); // Protect access to shared variables
+  if (num_students > 0) {
+    // Guard waits for the room to be empty
+    semSignalB(&mutex); // Release mutex to allow students to leave
+    semWaitB(&room_empty); // Wait for signal that room is empty
+    semWaitB(&mutex); // Acquire mutex again to assess the room
+  }
+
+  // Room is empty, assess security
+  assess_security();
+  guard_state = 0; // Guard leaves the room
+  semSignalB(&mutex);
 }
 
 // this function contains the main synchronization logic for a student
@@ -132,6 +145,28 @@ void student_study_in_room(long id)
   // study(), above.  You will also need to properly maintain the
   // global variable, num_students.  When done, students leave the
   // room.
+  semWaitB(&mutex); // Protect access to shared variables
+  while (guard_state != 0) { // Wait if guard is in the room
+    semSignalB(&mutex);
+    // Implement logic to wait for guard to leave if necessary
+    do_something_else(id);
+    semWaitB(&mutex);
+  }
+  num_students++;
+  // if (num_students == 1) {
+  //   // First student in the room might need to reset room_empty semaphore
+  // }
+  semSignalB(&mutex);
+
+  study(id); // Student studies
+
+  semWaitB(&mutex);
+  num_students--;
+  if (num_students == 0) {
+    // Last student signals the guard if waiting
+    semSignalB(&room_empty);
+  }
+  semSignalB(&mutex);
 }
 
 // guard thread function  --- NO need to change this function !
@@ -185,12 +220,25 @@ int main(int argc, char** argv)  // the main function
   // TODO: allocate space for the student threads array, sthreads
 
   // Initialize global variables and semaphores
+
+  // Convert command-line arguments
+  //====================================================
+  n = atoi(argv[1]);
+  capacity = atoi(argv[2]);
+  num_checks = atoi(argv[3]);
+
+  // Allocate space for the seeds array
+  seeds = (unsigned int*)malloc((n + 1) * sizeof(unsigned int)); // +1 for the guard
+
+  // Allocate space for the student threads array
+  sthreads = (pthread_t*)malloc(n * sizeof(pthread_t));
+  //====================================================
   guard_state = 0;   // not in room (walking the hall)
   num_students = 0;  // number of students in the room
 
   semInitB(&mutex, 1);  // initialize mutex
   // TODO: complete the semaphore initializations, for all your semaphores
-
+  semInitB(&room_empty, 0); // Initially, the room is not empty
   // initialize guard seed and create the guard thread
   seeds[0] = START_SEED;
   pthread_create(&cthread, NULL, guard, (void*) NULL);
@@ -198,6 +246,8 @@ int main(int argc, char** argv)  // the main function
   for (i = 1; i <= n; i++) {
     // TODO: create the student threads and initialize seeds[k], for
     // each student k
+    seeds[i] = START_SEED + i; // Initialize seed for student i
+    pthread_create(&sthreads[i-1], NULL, student, (void*) i);
 
   }
 
@@ -205,10 +255,13 @@ int main(int argc, char** argv)  // the main function
 
   for (i = 0; i < n; i++) {
     // TODO: cancel each of the student threads (do man on pthread_cancel())
+    pthread_cancel(sthreads[i]);
 
   }
 
   // TODO: free up any dynamic memory you allocated
+  free(seeds);
+  free(sthreads);
   
   return 0;
 }
